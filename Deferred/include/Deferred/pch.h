@@ -10,3 +10,4 @@
 #include <stdexcept>
 #include <optional>
 #include <algorithm>
+#include <stacktrace>
