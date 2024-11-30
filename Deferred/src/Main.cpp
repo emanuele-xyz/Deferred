@@ -62,10 +62,10 @@ int main()
             wndclass.hIconSm = LoadIcon(0, IDI_APPLICATION);
             D_Check(RegisterClassEx(&wndclass));
         }
+        auto wnd_class_cleanup{ sg::make_scope_guard([]() { UnregisterClass(D_WINDOW_CLASS_NAME, GetModuleHandle(0)); }) };
 
         // NOTE: create window
         HWND hwnd{};
-        auto hwnd_cleanup{ sg::make_scope_guard([]() {}) };
         {
             RECT rect{ 0, 0, D_START_CLIENT_W, D_START_CLIENT_H };
             D_Check(AdjustWindowRectEx(&rect, WS_OVERLAPPEDWINDOW, 0, WS_EX_OVERLAPPEDWINDOW));
@@ -80,9 +80,21 @@ int main()
                 w, h,
                 0, 0, GetModuleHandle(NULL), 0);
             D_Check(hwnd);
-            hwnd_cleanup = sg::make_scope_guard([=]() { DestroyWindow(hwnd); });
         }
+        auto hwnd_cleanup{ sg::make_scope_guard([=]() { DestroyWindow(hwnd); }) };
 
+        while (s_is_running)
+        {
+            // NOTE: pump window messages
+            {
+                MSG msg = { 0 };
+                while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE))
+                {
+                    TranslateMessage(&msg);
+                    DispatchMessage(&msg);
+                }
+            }
+        }
     }
     catch (const std::runtime_error& e)
     {
